@@ -1,7 +1,8 @@
 const config = {
     type: Phaser.AUTO,
-    width: 640,
-    height: 360,
+    //Consol.log(window.innerWidth, window.innerHeight);
+    width: window.innerWidth,
+    height: window.innerHeight,
     backgroundColor: '#3498db',
     parent: "game",
     scene: {
@@ -14,7 +15,8 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
-    this.load.image('fondo1', 'assets/fondo1.jpg')
+    this.load.image('fondo1', 'assets/entorno/fondo1.jpeg')
+    this.load.image('fondo2', 'assets/fondo2.jpeg')
     this.load.image('pato', 'assets/pato1.png');
 }
 
@@ -26,5 +28,6 @@ function create() {
 }
 
 function update() {
+    // No se necesita lógica de actualización en este ejemplo
     // Aquí puedes agregar la lógica de actualización del juego
 }
