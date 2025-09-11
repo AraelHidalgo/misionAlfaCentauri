@@ -17,12 +17,30 @@ class BootScene extends Phaser.Scene {
       
         this.load.audio('menuMusic', 'assets/sonidos/sonidoFondo.mp3');
         this.load.audio('transicionAmbiental', 'assets/sonidos/transicionAmbiental.mp3');
-        
-        
+        this.load.audio('acierto', 'assets/sonidos/acierto.mp3');
+        this.load.audio('error', 'assets/sonidos/error.mp3');
+        this.load.audio('w', 'assets/sonidos/weirdo.mp3');
         this.load.audio('clickSound', 'assets/sonidos/click.mp3');
+
+
+        // otros recursos
         this.load.image('fondoInicio', 'assets/entorno/fondo7.jpeg');
         this.load.image('fondo2', 'assets/entorno/fondo1.jpeg');
         this.load.image('pato', 'assets/personajes/FlooIA.png');
+
+
+        //Nivel1 recursos
+        this.load.image('fondoAlmacen', 'assets/entorno/fondo2.jpeg');
+        this.load.image('oxigeno', 'assets/recursosNave/oxigeno.png');
+        this.load.image('alVacio', 'assets/recursosNave/comida1.png');
+        this.load.image('sopa', 'assets/recursosNave/comida2.png');
+        this.load.image('enlatado', 'assets/recursosNave/comida3.png');
+        this.load.image('postrePasta', 'assets/recursosNave/comida4.png');
+        this.load.image('comidaCompleta', 'assets/recursosNave/comida5.png');
+        this.load.image('alVacio2', 'assets/recursosNave/comida6.png');
+        this.load.image('nuggets', 'assets/recursosNave/comida7.png');
+        this.load.image('sopa2', 'assets/recursosNave/comida8.png');
+        this.load.image('sopa3', 'assets/recursosNave/comida9.png');
     }
     
     create() {
@@ -377,9 +395,9 @@ class AboutScene extends Phaser.Scene {
         
         const graphics = this.add.graphics();
         graphics.fillStyle(0x000033, 0.8);
-        graphics.fillRoundedRect(200, 150, 800, 500, 20);
+        graphics.fillRoundedRect(200, 150, 800, 700, 20);
         graphics.lineStyle(2, 0x00ffff, 1);
-        graphics.strokeRoundedRect(200, 150, 800, 500, 20);
+        graphics.strokeRoundedRect(200, 150, 800, 700, 20);
         
         this.add.text(600, 200, "ACERCA DEL JUEGO", { 
             fontFamily: 'pixelFont', 
@@ -389,7 +407,7 @@ class AboutScene extends Phaser.Scene {
         
         const aboutContent = `Desarrollado por:\nVelvet Crew\n\nMISION ALFA CENTAURI\nes un juego educativo\nque enseña SQL a través\nde una aventura espacial.\n\nAprende bases de datos\nmientras salvas a\nla humanidad.\n\nVersión: 1.0 Beta`;
         
-        this.add.text(600, 400, aboutContent, { 
+        this.add.text(600, 480, aboutContent, { 
             fontFamily: 'pixelFont', 
             fontSize: '20px', 
             color: COLOR_BLANCO,
@@ -397,15 +415,15 @@ class AboutScene extends Phaser.Scene {
             lineSpacing: 10
         }).setOrigin(0.5);
         
-        let backText = this.add.text(600, 680, "<VOLVER AL MENÚ>", { 
+        let backText = this.add.text(600, 780, "<VOLVER AL MENÚ>", { 
             fontFamily: 'pixelFont', 
-            fontSize: '25px', 
+            fontSize: '20px', 
             color: COLOR_VERDE 
         })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => {
-            this.sound.play('clickSound', { volume: 0.5 });
+            this.sound.play('clickSound', { volume: 0.1 });
             
             this.cameras.main.fadeOut(500, 0, 0, 0);
             this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
@@ -455,7 +473,7 @@ class Level1Scene extends Phaser.Scene {
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => {
-            this.sound.play('clickSound', { volume: 0.5 });
+            this.sound.play('clickSound', { volume: 0.1 });
             
 
             const menuMusic = this.sound.add('menuMusic', {
@@ -472,27 +490,137 @@ class Level1Scene extends Phaser.Scene {
         });
     }
 }
-
-
-//Desafio 1 Scene (el orden nace del caos)
 class Desafio1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Desafio1Scene' });
     }
-    
+
     create() {
-        this.cameras.main.fadeIn(1000, 0, 0, 0);
-        
-        this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'DESAFÍO 1: ORGANIZAR INVENTARIO', {
+        let fondo = this.add.image(0, 0, 'fondoAlmacen');
+        fondo.setOrigin(0, 0);
+        fondo.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
+
+        this.input.setTopOnly(true);
+
+        this.comidas = [
+            this.add.image(200, 150, 'sopa').setScale(0.4).setInteractive({ draggable: true }),
+            this.add.image(400, 150, 'sopa2').setScale(0.4).setInteractive({ draggable: true }),
+            this.add.image(600, 150, 'sopa3').setScale(0.4).setInteractive({ draggable: true }),
+            this.add.image(800, 150, 'enlatado').setScale(0.4).setInteractive({ draggable: true }),
+            this.add.image(1000, 150, 'nuggets').setScale(0.4).setInteractive({ draggable: true }),
+            this.add.image(1200, 150, 'oxigeno').setScale(0.4).setInteractive({ draggable: true })
+        ];
+
+        this.add.text(700, 50, 'Arrastra los recursos a su entidad correcta (Modelo ER)', {
             fontFamily: 'pixelFont',
-            fontSize: '30px',
+            fontSize: '25px',
             color: COLOR_BLANCO
         }).setOrigin(0.5);
-        
-     
-    }
-}           
 
+        this.almacenAlimento = this.add.rectangle(600, 400, 250, 150, 0x444444, 0.3).setStrokeStyle(2, 0xffffff);
+        this.add.text(600, 380, "Alimento", { fontFamily: 'pixelFont', fontSize: '18px', color: COLOR_AMARILLO }).setOrigin(0.5);
+
+        this.almacenSopas = this.add.rectangle(400, 650, 200, 120, 0x00ff00, 0.2).setStrokeStyle(2, 0xffffff);
+        this.add.text(400, 640, "Sopas", { fontFamily: 'pixelFont', fontSize: '16px', color: COLOR_BLANCO }).setOrigin(0.5);
+
+        this.almacenEnlatados = this.add.rectangle(600, 650, 200, 120, 0xffa500, 0.2).setStrokeStyle(2, 0xffffff);
+        this.add.text(600, 640, "Enlatados", { fontFamily: 'pixelFont', fontSize: '16px', color: COLOR_BLANCO }).setOrigin(0.5);
+
+        this.almacenOtros = this.add.rectangle(800, 650, 200, 120, 0x0000ff, 0.2).setStrokeStyle(2, 0xffffff);
+        this.add.text(800, 640, "Otros", { fontFamily: 'pixelFont', fontSize: '16px', color: COLOR_BLANCO }).setOrigin(0.5);
+
+        this.almacenOxigeno = this.add.rectangle(1200, 500, 250, 150, 0xff0000, 0.2).setStrokeStyle(2, 0xffffff);
+        this.add.text(1200, 480, "Oxígeno", { fontFamily: 'pixelFont', fontSize: '18px', color: COLOR_BLANCO }).setOrigin(0.5);
+
+        let graphics = this.add.graphics();
+        graphics.lineStyle(2, 0xffffff, 0.7);
+        graphics.strokeLineShape(new Phaser.Geom.Line(this.almacenAlimento.x, this.almacenAlimento.y + 80, this.almacenSopas.x, this.almacenSopas.y - 60));
+        graphics.strokeLineShape(new Phaser.Geom.Line(this.almacenAlimento.x, this.almacenAlimento.y + 80, this.almacenEnlatados.x, this.almacenEnlatados.y - 60));
+        graphics.strokeLineShape(new Phaser.Geom.Line(this.almacenAlimento.x, this.almacenAlimento.y + 80, this.almacenOtros.x, this.almacenOtros.y - 60));
+
+        this.correctAssignments = 0;
+        this.totalCorrect = this.comidas.length;
+
+        this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+            gameObject.x = dragX;
+            gameObject.y = dragY;
+        });
+
+        this.input.on('dragend', (pointer, gameObject) => {
+            if (this.checkDrop(gameObject)) {
+                this.correctAssignments++;
+                gameObject.disableInteractive();
+                if (this.correctAssignments === this.totalCorrect) {
+                    this.showWinMessage();
+                }
+            }
+        });
+    }
+
+    checkDrop(gameObject) {
+        if (gameObject.texture.key.includes("sopa") && Phaser.Geom.Rectangle.Contains(this.almacenSopas.getBounds(), gameObject.x, gameObject.y)) {
+            gameObject.x = this.almacenSopas.x;
+            gameObject.y = this.almacenSopas.y;
+            return true;
+        }
+        if (gameObject.texture.key.includes("enlatado") && Phaser.Geom.Rectangle.Contains(this.almacenEnlatados.getBounds(), gameObject.x, gameObject.y)) {
+            gameObject.x = this.almacenEnlatados.x;
+            gameObject.y = this.almacenEnlatados.y;
+            return true;
+        }
+        if (gameObject.texture.key.includes("nuggets") && Phaser.Geom.Rectangle.Contains(this.almacenOtros.getBounds(), gameObject.x, gameObject.y)) {
+            gameObject.x = this.almacenOtros.x;
+            gameObject.y = this.almacenOtros.y;
+            return true;
+        }
+        if (gameObject.texture.key.includes("oxigeno") && Phaser.Geom.Rectangle.Contains(this.almacenOxigeno.getBounds(), gameObject.x, gameObject.y)) {
+            gameObject.x = this.almacenOxigeno.x;
+            gameObject.y = this.almacenOxigeno.y;
+            return true;
+        }
+        return false;
+    }
+
+    showWinMessage() {
+        let overlay = this.add.rectangle(
+            this.cameras.main.centerX, 
+            this.cameras.main.centerY, 
+            this.cameras.main.width, 
+            this.cameras.main.height, 
+            0x000000, 
+            0.4
+        );
+
+        let messageBox = this.add.rectangle(
+            this.cameras.main.centerX, 
+            this.cameras.main.centerY, 
+            950, 
+            320, 
+            0x000033, 
+            0.9
+        ).setStrokeStyle(2, 0x00ffff); 
+
+        let winText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY, 
+            "¡Inventario organizado correctamente!", {
+            fontFamily: 'pixelFont',
+            fontSize: '24px',
+            color: COLOR_BLANCO,
+            align: 'center'
+        }).setOrigin(0.5);
+
+    
+        [overlay, messageBox, winText].forEach(element => {
+            element.setAlpha(0);
+        });
+
+        this.tweens.add({
+            targets: [overlay, messageBox, winText],
+            alpha: 1,
+            duration: 400,
+            ease: 'Power2'
+        });
+    }
+}
 
 const config = {
     type: Phaser.AUTO,
@@ -500,7 +628,7 @@ const config = {
     height: window.innerHeight,
     backgroundColor: '#0a0a0a',
     parent: "game",
-    scene: [BootScene, MenuScene, IntroductionScene, AboutScene, Level1Scene],
+    scene: [BootScene, MenuScene, IntroductionScene, AboutScene, Level1Scene, Desafio1Scene],
     audio: {
         disableWebAudio: false
     }
