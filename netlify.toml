@@ -1,6 +1,5 @@
 [build]
   base = "misionAlfaCentauri/Project"
   publish = "misionAlfaCentauri/Project"
-  command = "# no build required - static HTML site"
-  ignore = "exit 0"
   command = ""
+  ignore = "exit 0"
