@@ -1,4 +1,4 @@
 [build]
-  base = "project"
-  publish = "project"
+  base = "misionAlfaCentauri/Project"
+  publish = "misionAlfaCentauri/Project"
   command = ""
