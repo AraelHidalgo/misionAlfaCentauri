@@ -1,2 +1,2 @@
 [build]
-  publish = "misionAlfaCentauri/Project"
+  publish = "."
