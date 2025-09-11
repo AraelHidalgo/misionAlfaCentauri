@@ -22,12 +22,10 @@ class BootScene extends Phaser.Scene {
         this.load.audio('w', 'assets/sonidos/weirdo.mp3');
         this.load.audio('clickSound', 'assets/sonidos/click.mp3');
 
-
         // otros recursos
         this.load.image('fondoInicio', 'assets/entorno/fondo7.jpeg');
         this.load.image('fondo2', 'assets/entorno/fondo1.jpeg');
         this.load.image('pato', 'assets/personajes/FlooIA.png');
-
 
         //Nivel1 recursos
         this.load.image('fondoAlmacen', 'assets/entorno/fondo2.jpeg');
