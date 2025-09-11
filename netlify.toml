@@ -1,5 +1,2 @@
 [build]
-  base = "misionAlfaCentauri/Project"
   publish = "misionAlfaCentauri/Project"
-  command = ""
-  ignore = "exit 0"
