@@ -23,13 +23,24 @@ class BootScene extends Phaser.Scene {
         this.load.audio('clickSound', 'assets/sonidos/click.mp3');
         this.load.audio('quackFloo', 'assets/sonidos/flooSound.mp3');
 
-        // otros recursos
+        // fondos
         this.load.image('fondoInicio', 'assets/entorno/fondo7.jpeg');
         this.load.image('fondo2', 'assets/entorno/fondo1.jpeg');
+        this.load.image('fondoAlmacen', 'assets/entorno/fondo2.jpeg');
+        this.load.image('fondoPlaneta', 'assets/entorno/fondo4.jpeg');
+        this.load.image('fondoNave', 'assets/entorno/fondo3.jpeg');
+
+        //personajes
         this.load.image('pato', 'assets/personajes/FlooIA.png');
 
-        //Nivel1 recursos
-        this.load.image('fondoAlmacen', 'assets/entorno/fondo2.jpeg');
+
+        //Componentes
+        this.load.image('terminal', 'assets/componentes/terminal.png');
+        this.load.image('botonOk', 'assets/componentes/clickOk.png');
+        this.load.image('botonDelete', 'assets/componentes/clickDelete.png');
+
+        //Recursos
+ 
         this.load.image('oxigeno', 'assets/recursosNave/oxigeno.png');
         this.load.image('alVacio', 'assets/recursosNave/comida1.png');
         this.load.image('sopa', 'assets/recursosNave/comida2.png');
@@ -57,10 +68,10 @@ class BootScene extends Phaser.Scene {
         this.registry.set('bgMusic', this.menuMusic);
         
 
-        this.scene.start('MenuScene');
+        this.scene.start('Desafio2Scene');
     }
 }
-
+/*
 class MenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MenuScene' });
@@ -1431,23 +1442,590 @@ class Desafio1Scene extends Phaser.Scene {
         });
     }
 }
-//desafio 2 - escena vacía por ahora
+//desafio 2 - escena vacía por ahora */
 class Desafio2Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Desafio2Scene' });
     }
 
+    init() {
+        // Variables para la terminal SQL
+        this.currentInput = '';
+        this.commandHistory = [];
+        this.currentStep = 0;
+        this.isTyping = false;
+        this.cursor = '|';
+        this.cursorVisible = true;
+        
+        // Pasos del desafío SQL
+        this.sqlSteps = [
+            {
+                instruction: "Instruccion:\nCrea la base de datos principal con:\nCREATE DATABASE MisionAlfaCentauri;",
+                expectedCommand: "CREATE DATABASE MisionAlfaCentauri;",
+                successMessage: "¡Base de datos creada correctamente!",
+                hint: "Recuerda usar mayúsculas para los comandos SQL"
+            },
+            {
+                instruction: "Instruccion:\nAhora usa la base de datos:\nUSE MisionAlfaCentauri;",
+                expectedCommand: "USE MisionAlfaCentauri;",
+                successMessage: "¡Conectado a la base de datos!",
+                hint: "No olvides el punto y coma al final"
+            },
+            {
+                instruction: "Instruccion:\nCrea la tabla de recursos:\nCREATE TABLE Recursos \n(id INT, nombre VARCHAR(50), \ntipo VARCHAR(30));",
+                expectedCommand: "CREATE TABLE Recursos (id INT, nombre VARCHAR(50), tipo VARCHAR(30));",
+                successMessage: "¡Tabla de recursos creada!",
+                hint: "Verifica la sintaxis de CREATE TABLE"
+            }
+        ];
+    }
+
     create() {
-        let fondo = this.add.image(0, 0, 'fondoEstrella');
+        // Fade in
+        this.cameras.main.fadeIn(1000, 0, 0, 0);
+
+        // Fondo
+        let fondo = this.add.image(0, 0, 'fondoPlaneta');
         fondo.setOrigin(0, 0);
         fondo.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
-        this.add.text(this.cameras.main.centerX, this.cameras.main.centerY, 'DESAFÍO 2 - EN CONSTRUCCIÓN', {
+        // Diálogo inicial de Floo
+        this.startFlooDialog();
+    }
+
+    startFlooDialog() {
+        this.dialogs = [
+            "¡Ahora necesitamos restaurar la base de datos!\nLa terminal está lista para recibir comandos SQL.",
+            "Sigue las instrucciones paso a paso.\nCada comando debe terminar con punto y coma (;)",
+            "Usa el botón OK para ejecutar el comando\no DELETE para borrarlo.",
+            "¡Empecemos a reconstruir el sistema!"
+        ];
+
+        this.dialogIndex = 0;
+        this.createDialogBox();
+        
+        this.floo = this.add.image(1500, 500, 'pato');
+        this.floo.setScale(0.5);
+        
+        this.floatTween = this.tweens.add({
+            targets: this.floo,
+            y: 520,
+            duration: 2000,
+            ease: 'Sine.inOut',
+            yoyo: true,
+            repeat: -1
+        });
+        
+        this.dialogText = this.add.text(700, 470, '', {
             fontFamily: 'pixelFont',
-            fontSize: '32px',
+            fontSize: '18px',
             color: COLOR_BLANCO,
+            align: 'center',
+            wordWrap: { width: 900 },
+            lineSpacing: 10
+        }).setOrigin(0.5, 0.5);
+
+        this.continueText = this.add.text(700, 590, '[CLICK para continuar]', {
+            fontFamily: 'pixelFont',
+            fontSize: '14px',
+            color: COLOR_AMARILLO
+        }).setOrigin(0.5).setVisible(false);
+        
+        this.continueTween = this.tweens.add({
+            targets: this.continueText,
+            alpha: 0.3,
+            duration: 500,
+            ease: 'Sine.inOut',
+            yoyo: true,
+            repeat: -1
+        });
+        
+        this.skipButton = this.add.text(this.cameras.main.width - 200, 50, '[SKIP >>]', {
+            fontFamily: 'pixelFont',
+            fontSize: '20px',
+            color: COLOR_CELESTE
+        })
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => {
+            this.endDialog();
+        });
+    
+        this.showNextDialog();
+        
+        this.clickZone = this.add.rectangle(700, 470, 900, 250, 0x000000, 0)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => {
+                if (!this.isTyping && this.dialogIndex > 0) {
+                    this.sound.play('clickSound', { volume: 0.2 });
+                    this.showNextDialog();
+                } else if (this.isTyping) {
+                    this.completeText();
+                }
+            });
+    }
+
+    createDialogBox() {
+        this.dialogGraphics = this.add.graphics();
+        
+        this.dialogGraphics.lineStyle(3, 0x00ffff, 0.8);
+        this.dialogGraphics.strokeRoundedRect(200, 350, 1000, 280, 20);
+    
+        this.dialogGraphics.lineStyle(2, 0xffffff, 0.5);
+        this.dialogGraphics.strokeRoundedRect(205, 355, 990, 270, 18);
+
+        this.dialogGraphics.fillStyle(0x000033, 0.7);
+        this.dialogGraphics.fillRoundedRect(205, 355, 990, 270, 18);
+ 
+        this.dialogTitle = this.add.text(700, 375, 'FLOO - ASISTENTE IA', {
+            fontFamily: 'pixelFont',
+            fontSize: '15px',
+            color: COLOR_CELESTE
+        }).setOrigin(0.5);
+        
+        this.dialogGraphics.lineStyle(1, 0x00ffff, 0.5);
+        this.dialogGraphics.lineBetween(220, 390, 1180, 390);
+    }
+
+    showNextDialog() {
+        if (this.dialogIndex >= this.dialogs.length) {
+            this.endDialog();
+            return;
+        }
+        
+        if (this.typewriterTimer) {
+            this.typewriterTimer.destroy();
+        }
+        
+        this.targetText = this.dialogs[this.dialogIndex];
+        this.currentText = '';
+        this.charIndex = 0;
+        this.isTyping = true;
+        this.continueText.setVisible(false);
+
+        this.typewriterTimer = this.time.addEvent({
+            delay: 25,
+            callback: () => {
+                this.typeWriter();
+            },
+            callbackScope: this,
+            repeat: this.targetText.length
+        });
+        
+        this.dialogIndex++;
+    }
+
+    typeWriter() {
+        if (this.charIndex < this.targetText.length) {
+            this.currentText = this.targetText.substring(0, this.charIndex + 1);
+            this.dialogText.setText(this.currentText);
+            this.charIndex++;
+        }
+        
+        if (this.charIndex >= this.targetText.length) {
+            this.isTyping = false;
+            this.continueText.setVisible(true);
+            if (this.typewriterTimer) {
+                this.typewriterTimer.destroy();
+                this.typewriterTimer = null;
+            }
+        }
+    }
+
+    completeText() {
+        if (this.typewriterTimer) {
+            this.typewriterTimer.destroy();
+            this.typewriterTimer = null;
+        }
+        this.currentText = this.targetText;
+        this.dialogText.setText(this.currentText);
+        this.charIndex = this.targetText.length;
+        this.isTyping = false;
+        this.continueText.setVisible(true);
+    }
+
+    endDialog() {
+        // Limpiar diálogo
+        if (this.typewriterTimer) this.typewriterTimer.destroy();
+        if (this.floatTween) this.floatTween.stop();
+        if (this.continueTween) this.continueTween.stop();
+        
+        if (this.dialogGraphics) this.dialogGraphics.destroy();
+        if (this.dialogTitle) this.dialogTitle.destroy();
+        if (this.dialogText) this.dialogText.destroy();
+        if (this.continueText) this.continueText.destroy();
+        if (this.skipButton) this.skipButton.destroy();
+        if (this.clickZone) this.clickZone.destroy();
+        if (this.floo) this.floo.destroy();
+        
+        // Iniciar el desafío de la terminal
+        this.startTerminalChallenge();
+    }
+
+    startTerminalChallenge() {
+        // Crear Floo permanente
+        this.createPermanentFloo();
+
+        // Crear la interfaz de la terminal
+        this.createTerminalInterface();
+
+        // Activar entrada de teclado
+        this.setupKeyboardInput();
+
+        // Mostrar la primera instrucción
+        this.showCurrentInstruction();
+    }
+
+    createPermanentFloo() {
+        this.flooHelper = this.add.image(this.cameras.main.width - 100, 100, 'pato');
+        this.flooHelper.setScale(0.25);
+        this.flooHelper.setInteractive({ useHandCursor: true });
+        
+        this.tweens.add({
+            targets: this.flooHelper,
+            y: 120,
+            duration: 2000,
+            ease: 'Sine.inOut',
+            yoyo: true,
+            repeat: -1
+        });
+        
+        this.flooHelper.on('pointerdown', () => {
+            this.showHint();
+        });
+    }
+
+    createTerminalInterface() {
+        const centerX = this.cameras.main.centerX;
+        const centerY = this.cameras.main.centerY;
+
+        // Terminal de fondo
+        this.terminal = this.add.image(centerX, centerY - 50, 'terminal');
+        this.terminal.setScale(5);
+
+        // Área de texto sobre la terminal
+        const terminalBounds = this.terminal.getBounds();
+        
+        // Fondo oscuro para el área de texto
+
+        // Texto del prompt
+        this.promptText = this.add.text(centerX - 275, centerY - 580, 'SQL> ', {
+            fontFamily: 'pixelFont',
+            fontSize: '25px',
+            color: COLOR_VERDE
+        });
+
+        // Texto del comando actual
+        this.commandText = this.add.text(centerX - 200, centerY - 580, '', {
+            fontFamily: 'pixelFont',
+            fontSize: '28px',
+            color: COLOR_BLANCO,
+            wordWrap: { width: 600 }
+        });
+
+        // Cursor parpadeante
+        this.cursorText = this.add.text(centerX - 200, centerY - 580, this.cursor, {
+            fontFamily: 'pixelFont',
+            fontSize: '28px',
+            color: COLOR_BLANCO
+        });
+
+        // Historial de comandos (máximo 3 líneas visibles)
+        this.historyText = this.add.text(centerX - 265, centerY - 320, '', {
+            fontFamily: 'pixelFont',
+            fontSize: '25px',
+            color: COLOR_CELESTE,
+            wordWrap: { width: 650 },
+            lineSpacing: 5
+        });
+
+        // Botones
+        this.createButtons();
+
+        // Área de instrucciones
+        this.createInstructionArea();
+
+        // Animación del cursor
+        this.cursorTimer = this.time.addEvent({
+            delay: 500,
+            loop: true,
+            callback: () => {
+                this.cursorVisible = !this.cursorVisible;
+                this.cursorText.setText(this.cursorVisible ? this.cursor : ' ');
+            }
+        });
+    }
+
+    createButtons() {
+        const centerX = this.cameras.main.centerX;
+        const centerY = this.cameras.main.centerY;
+
+        // Botón OK
+        this.okButton = this.add.image(centerX + 200, centerY + 245, 'botonOk');
+        this.okButton.setScale(1);
+        this.okButton.setInteractive({ useHandCursor: true });
+        this.okButton.on('pointerdown', () => {
+            this.executeCommand();
+        });
+
+        this.okButton.on('pointerover', () => {
+            this.okButton.setScale(1.1);
+        });
+
+        this.okButton.on('pointerout', () => {
+            this.okButton.setScale(1);
+        });
+
+        // Botón DELETE
+        this.deleteButton = this.add.image(centerX - 200, centerY + 245, 'botonDelete');
+        this.deleteButton.setScale(1);
+        this.deleteButton.setInteractive({ useHandCursor: true });
+        this.deleteButton.on('pointerdown', () => {
+            this.clearCommand();
+        });
+
+        this.deleteButton.on('pointerover', () => {
+            this.deleteButton.setScale(1.1);
+        }); 
+
+        this.deleteButton.on('pointerout', () => {
+            this.deleteButton.setScale(1);
+        });
+    }
+
+    createInstructionArea() {
+        const centerX = this.cameras.main.centerX;
+        const topY = 150;
+
+   
+        // Texto de instrucciones
+        this.instructionText = this.add.text(centerX, topY + 500, '', {
+            fontFamily: 'pixelFont',
+            fontSize: '28px',
+            color: COLOR_AMARILLO,
+   
+            wordWrap: { width: 750 },
+            lineSpacing: 8
+        }).setOrigin(0.5);
+
+        // Contador de progreso
+        this.progressCounter = this.add.text(centerX, topY - 80, '', {
+            fontFamily: 'pixelFont',
+            fontSize: '14px',
+            color: COLOR_CELESTE
+        }).setOrigin(0.5);
+    }
+
+    setupKeyboardInput() {
+        // Capturar todas las teclas
+        this.input.keyboard.on('keydown', (event) => {
+            this.handleKeyPress(event);
+        });
+
+        // Asegurar que el juego capture el foco
+        this.input.keyboard.enabled = true;
+        this.game.canvas.focus();
+    }
+
+    handleKeyPress(event) {
+        const key = event.key;
+
+        // Prevenir comportamiento por defecto
+        event.preventDefault();
+
+        if (key === 'Backspace') {
+            if (this.currentInput.length > 0) {
+                this.currentInput = this.currentInput.slice(0, -1);
+                this.updateCommandDisplay();
+            }
+        } else if (key === 'Enter') {
+            this.executeCommand();
+        } else if (key.length === 1) {
+            // Solo caracteres imprimibles
+            this.currentInput += key;
+            this.updateCommandDisplay();
+        }
+    }
+
+    updateCommandDisplay() {
+        this.commandText.setText(this.currentInput);
+        
+        // Posicionar el cursor al final del texto
+        const textWidth = this.commandText.width;
+        this.cursorText.setPosition(
+            this.commandText.x + textWidth,
+            this.commandText.y
+        );
+    }
+
+    executeCommand() {
+        if (this.currentInput.trim() === '') return;
+
+        this.sound.play('clickSound', { volume: 0.2 });
+
+        const command = this.currentInput.trim();
+        const currentStep = this.sqlSteps[this.currentStep];
+        
+        // Agregar comando al historial
+        this.commandHistory.push(`SQL> ${command}`);
+        
+        // Mantener solo las últimas 3 líneas en el historial
+        if (this.commandHistory.length > 3) {
+            this.commandHistory.shift();
+        }
+        
+        // Actualizar display del historial
+        this.historyText.setText(this.commandHistory.join('\n'));
+
+        // Verificar si el comando es correcto
+        if (this.isCommandCorrect(command, currentStep.expectedCommand)) {
+            this.sound.play('acierto', { volume: 0.2 });
+            this.commandHistory.push(`> ${currentStep.successMessage}`);
+            
+            this.currentStep++;
+            
+            if (this.currentStep >= this.sqlSteps.length) {
+                this.showCompletionMessage();
+            } else {
+                this.showCurrentInstruction();
+            }
+        } else {
+            this.sound.play('error', { volume: 0.2 });
+            this.commandHistory.push(`> Error: Comando incorrecto`);
+        }
+
+        // Limpiar input actual
+        this.currentInput = '';
+        this.updateCommandDisplay();
+        
+        // Actualizar historial
+        if (this.commandHistory.length > 3) {
+            this.commandHistory.shift();
+        }
+        this.historyText.setText(this.commandHistory.join('\n'));
+    }
+
+    isCommandCorrect(input, expected) {
+        // Normalizar ambos comandos (eliminar espacios extra, convertir a mayúsculas)
+        const normalizeCommand = (cmd) => {
+            return cmd.toUpperCase()
+                     .replace(/\s+/g, ' ')
+                     .trim();
+        };
+
+        return normalizeCommand(input) === normalizeCommand(expected);
+    }
+
+    clearCommand() {
+        this.sound.play('clickSound', { volume: 0.1 });
+        this.currentInput = '';
+        this.updateCommandDisplay();
+    }
+
+    showCurrentInstruction() {
+        const currentStep = this.sqlSteps[this.currentStep];
+        this.instructionText.setText(currentStep.instruction);
+        this.progressCounter.setText(`Paso ${this.currentStep + 1} de ${this.sqlSteps.length}`);
+    }
+
+    showHint() {
+        const currentStep = this.sqlSteps[this.currentStep];
+        if (currentStep && currentStep.hint) {
+            this.sound.play('quackFloo', { volume: 0.1 });
+            
+            // Mostrar hint temporal
+            const hintText = this.add.text(
+                this.cameras.main.centerX,
+                this.cameras.main.height - 100,
+                currentStep.hint,
+                {
+                    fontFamily: 'pixelFont',
+                    fontSize: '14px',
+                    color: COLOR_BLANCO,
+                    align: 'center',
+                    backgroundColor: '#000033',
+                    padding: { left: 20, right: 20, top: 10, bottom: 10 }
+                }
+            ).setOrigin(0.5).setAlpha(0);
+
+            // Animar aparición y desaparición
+            this.tweens.add({
+                targets: hintText,
+                alpha: 1,
+                duration: 300,
+                yoyo: true,
+                hold: 3000,
+                onComplete: () => {
+                    hintText.destroy();
+                }
+            });
+        }
+    }
+
+    showCompletionMessage() {
+        this.sound.play('w', { volume: 0.3 });
+        
+        let overlay = this.add.rectangle(
+            this.cameras.main.centerX, 
+            this.cameras.main.centerY, 
+            this.cameras.main.width, 
+            this.cameras.main.height, 
+            0x000000, 
+            0.4
+        );
+
+        let messageBox = this.add.rectangle(
+            this.cameras.main.centerX, 
+            this.cameras.main.centerY, 
+            950, 
+            320, 
+            0x000033, 
+            0.9
+        ).setStrokeStyle(2, 0x00ffff); 
+
+        let winText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY - 30, 
+            "¡MISIÓN COMPLETADA!\nBase de datos restaurada exitosamente", {
+            fontFamily: 'pixelFont',
+            fontSize: '24px',
+            color: COLOR_VERDE,
             align: 'center'
         }).setOrigin(0.5);
+
+        let continueText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY + 50, 
+            "[Continuar al siguiente nivel]", {
+            fontFamily: 'pixelFont',
+            fontSize: '16px',
+            color: COLOR_AMARILLO,
+            align: 'center'
+        }).setOrigin(0.5);
+    
+        [overlay, messageBox, winText, continueText].forEach(element => {
+            element.setAlpha(0);
+        });
+
+        this.tweens.add({
+            targets: [overlay, messageBox, winText, continueText],
+            alpha: 1,
+            duration: 400,
+            ease: 'Power2',
+            onComplete: () => {
+                this.time.delayedCall(3000, () => {
+                    this.scene.start('MenuScene'); // Cambiar por el siguiente nivel cuando esté listo
+                });
+            }
+        });
+    }
+
+    shutdown() {
+        // Limpiar timers
+        if (this.typewriterTimer) {
+            this.typewriterTimer.destroy();
+        }
+        if (this.cursorTimer) {
+            this.cursorTimer.destroy();
+        }
+        
+        // Limpiar eventos de teclado
+        this.input.keyboard.removeAllListeners();
     }
 }
 
@@ -1461,12 +2039,12 @@ const config = {
     parent: "game",
     scene: [
         BootScene, 
-        MenuScene, 
+        /*MenuScene, 
         IntroductionScene, 
         AboutScene, 
         Level1Scene, 
         Desafio1Scene, 
-        Level2Scene,
+        Level2Scene,*/
         Desafio2Scene],
     audio: {
         disableWebAudio: false
