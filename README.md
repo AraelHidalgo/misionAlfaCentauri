@@ -1,3 +1,4 @@
+```markdown
 # 🚀 MISIÓN ALFA CENTAURI: SQL EN EL ESPACIO
 
 ![Version](https://img.shields.io/badge/version-1.0_Beta-blue)
@@ -63,3 +64,88 @@ CREATE TABLE Recursos (
     nombre VARCHAR(50),
     tipo VARCHAR(30)
 );
+```
+
+## 🛠 Tecnologías
+
+- **Motor**: Phaser 3.70.0
+- **Lenguaje**: JavaScript ES6
+- **Diseño**: Pixel Art personalizado
+- **Audio**: Soundtrack ambiental original
+- **Fuente**: Press Start 2P
+
+## 📦 Instalación
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/velvetcrew/mision-alfa-centauri.git
+
+# Navegar al directorio
+cd mision-alfa-centauri
+
+# Abrir index.html en tu navegador
+# O usar un servidor local como Live Server
+```
+
+## 🎯 Controles
+
+- **🖱️ Mouse**: Navegación principal
+- **⌨️ Teclado**: Entrada de comandos SQL
+- **Click en Floo**: Obtener consejos
+- **Botón OK**: Ejecutar comandos
+- **Botón DELETE**: Limpiar terminal
+
+## 🏆 Sistema de Progreso
+
+- ✅ **Progreso Visual**: Barras de progreso en tiempo real
+- ❤️ **Sistema de Vidas**: 10 intentos por nivel
+- 🎯 **Checkpoints**: Guarda tu progreso entre niveles
+- 🌟 **Logros**: Desbloquea contenido especial
+
+## 👥 Equipo de Desarrollo
+
+**Velvet Crew**
+- Desarrollo y Game Design
+- Arte y Animaciones  
+- Narrativa y SQL Design
+- Testing y QA
+
+## 🤝 Contribuir
+
+¿Tienes ideas para nuevos niveles o mecánicas SQL? ¡Nos encantaría escucharte!
+
+1. Fork el proyecto
+2. Crea tu rama de características (`git checkout -b feature/NuevoNivel`)
+3. Commit tus cambios (`git commit -m 'Agregar nuevo desafío SQL'`)
+4. Push a la rama (`git push origin feature/NuevoNivel`)
+5. Abre un Pull Request
+
+## 📝 Roadmap
+
+- [x] Sistema base con Phaser
+- [x] Nivel 1: Modelo E-R
+- [x] Nivel 2: Comandos DDL
+- [ ] Nivel 3: Consultas SELECT
+- [ ] Sistema de guardado
+- [ ] Leaderboard global
+- [ ] Modo multijugador cooperativo
+- [ ] Niveles avanzados (JOINs, Subqueries)
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 🌟 Agradecimientos
+
+- A la comunidad de Phaser por el increíble motor de juegos
+- A todos los educadores que hacen el aprendizaje divertido
+- A los patos del espacio 🦆🚀
+
+---
+
+### ¿Listo para salvar a la humanidad con SQL?
+
+**[🎮 JUGAR AHORA](https://velvetcrew.github.io/mision-alfa-centauri/)**
+
+*"El orden nace del caos, y los datos salvan civilizaciones"*
+```
