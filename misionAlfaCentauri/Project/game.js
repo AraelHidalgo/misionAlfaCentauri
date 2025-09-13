@@ -68,10 +68,10 @@ class BootScene extends Phaser.Scene {
         this.registry.set('bgMusic', this.menuMusic);
         
 
-        this.scene.start('Desafio2Scene');
+        this.scene.start('MenuScene');
     }
 }
-/*
+
 class MenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MenuScene' });
@@ -1442,7 +1442,7 @@ class Desafio1Scene extends Phaser.Scene {
         });
     }
 }
-//desafio 2 - escena vacía por ahora */
+//desafio 2 - escena vacía por ahora 
 class Desafio2Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Desafio2Scene' });
@@ -2039,12 +2039,12 @@ const config = {
     parent: "game",
     scene: [
         BootScene, 
-        /*MenuScene, 
+        MenuScene, 
         IntroductionScene, 
         AboutScene, 
         Level1Scene, 
         Desafio1Scene, 
-        Level2Scene,*/
+        Level2Scene,
         Desafio2Scene],
     audio: {
         disableWebAudio: false
