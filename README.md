@@ -1,4 +1,3 @@
-```markdown
 # 🚀 MISIÓN ALFA CENTAURI: SQL EN EL ESPACIO
 
 ![Version](https://img.shields.io/badge/version-1.0_Beta-blue)
@@ -145,7 +144,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ### ¿Listo para salvar a la humanidad con SQL?
 
-**[🎮 JUGAR AHORA](https://velvetcrew.github.io/mision-alfa-centauri/)**
+**[🎮 JUGAR AHORA](https://misionalfacentauri.netlify.app)**
 
 *"El orden nace del caos, y los datos salvan civilizaciones"*
 ```
