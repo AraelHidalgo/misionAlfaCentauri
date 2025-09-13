@@ -1442,10 +1442,14 @@ class Desafio1Scene extends Phaser.Scene {
         });
     }
 }
-//desafio 2 - escena vacía por ahora 
+//desafio 2
 class Desafio2Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Desafio2Scene' });
+    }
+
+    preload() {
+        this.load.font('pixelFont', 'assets/fonts/PressStart2P-Regular.ttf', 'truetype');
     }
 
     init() {
@@ -1457,6 +1461,14 @@ class Desafio2Scene extends Phaser.Scene {
         this.cursor = '|';
         this.cursorVisible = true;
         
+        // Variables para los consejos de Floo
+        this.helpBoxVisible = false;
+        this.currentTip = 0;
+
+        // Límite de errores
+        this.maxAttempts = 10;
+        this.attemptsLeft = this.maxAttempts;
+
         // Pasos del desafío SQL
         this.sqlSteps = [
             {
@@ -1481,31 +1493,35 @@ class Desafio2Scene extends Phaser.Scene {
     }
 
     create() {
-        // Fade in
         this.cameras.main.fadeIn(1000, 0, 0, 0);
 
-        // Fondo
         let fondo = this.add.image(0, 0, 'fondoPlaneta');
         fondo.setOrigin(0, 0);
         fondo.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
-        // Diálogo inicial de Floo
         this.startFlooDialog();
     }
 
     startFlooDialog() {
-        this.dialogs = [
-            "¡Ahora necesitamos restaurar la base de datos!\nLa terminal está lista para recibir comandos SQL.",
-            "Sigue las instrucciones paso a paso.\nCada comando debe terminar con punto y coma (;)",
-            "Usa el botón OK para ejecutar el comando\no DELETE para borrarlo.",
-            "¡Empecemos a reconstruir el sistema!"
-        ];
+    this.dialogs = [
+        "¡Ahora necesitamos restaurar la base de datos!\nLa terminal está lista para recibir comandos SQL.",
+        "Sigue las instrucciones paso a paso.\nCada comando debe terminar con punto y coma (;)",
+        "Usa el botón EJECUTAR (verde) para enviar tu comando\ny el botón BORRAR (rojo) para limpiar el texto.",
+        "¡Recuerda que puedes clickearme si necesitas ayuda!"
+    ];
+    
+    // resto del código igual...
+
 
         this.dialogIndex = 0;
         this.createDialogBox();
         
         this.floo = this.add.image(1500, 500, 'pato');
         this.floo.setScale(0.5);
+        this.floo.setInteractive({ useHandCursor: true });
+        this.floo.on('pointerdown', () => {
+            this.sound.play('quackFloo', { volume: 0.2 });
+        });
         
         this.floatTween = this.tweens.add({
             targets: this.floo,
@@ -1644,7 +1660,6 @@ class Desafio2Scene extends Phaser.Scene {
     }
 
     endDialog() {
-        // Limpiar diálogo
         if (this.typewriterTimer) this.typewriterTimer.destroy();
         if (this.floatTween) this.floatTween.stop();
         if (this.continueTween) this.continueTween.stop();
@@ -1656,23 +1671,17 @@ class Desafio2Scene extends Phaser.Scene {
         if (this.skipButton) this.skipButton.destroy();
         if (this.clickZone) this.clickZone.destroy();
         if (this.floo) this.floo.destroy();
-        
-        // Iniciar el desafío de la terminal
+
         this.startTerminalChallenge();
     }
 
     startTerminalChallenge() {
-        // Crear Floo permanente
         this.createPermanentFloo();
-
-        // Crear la interfaz de la terminal
         this.createTerminalInterface();
-
-        // Activar entrada de teclado
         this.setupKeyboardInput();
-
-        // Mostrar la primera instrucción
         this.showCurrentInstruction();
+        this.createProgressBar();
+        this.createAttemptBar();
     }
 
     createPermanentFloo() {
@@ -1690,61 +1699,156 @@ class Desafio2Scene extends Phaser.Scene {
         });
         
         this.flooHelper.on('pointerdown', () => {
-            this.showHint();
+            this.toggleHelpBox();
         });
+
+        // Consejos actualizados para SQL
+        this.tips = [
+            "CREATE DATABASE es el primer\npaso para organizar datos.",
+            "USE selecciona la base de datos\nen la que trabajarás.",
+            "CREATE TABLE define la\nestructura de tus datos.",
+            "Los comandos SQL siempre\nterminan con punto y coma (;)",
+            "VARCHAR(50) significa texto\nde máximo 50 caracteres.",
+            "INT es para números enteros\ncomo IDs o cantidades."
+        ];
+        this.tipTimer = null;
+    }
+
+    toggleHelpBox() {
+        if (this.helpBoxVisible) {
+            this.hideHelpBox();
+        } else {
+            this.showHelpBox();
+        }
+    }
+
+    showHelpBox() {
+        this.sound.play('quackFloo', { volume: 0.1 });
+        this.helpBoxVisible = true;
+
+        this.helpGraphics = this.add.graphics();
+        this.helpGraphics.fillStyle(0x000033, 0.5);
+        this.helpGraphics.fillRoundedRect(
+            this.cameras.main.width - 520,
+            50,
+            350,
+            150,
+            10
+        );
+        this.helpGraphics.lineStyle(2, 0x00ffff, 1);
+        this.helpGraphics.strokeRoundedRect(
+            this.cameras.main.width - 520,
+            50,
+            350,
+            150,
+            10
+        );
+
+        this.helpTitle = this.add.text(
+            this.cameras.main.width - 345,
+            70,
+            'CONSEJO DE FLOO',
+            {
+                fontFamily: 'pixelFont',
+                fontSize: '14px',
+                color: COLOR_CELESTE
+            }
+        ).setOrigin(0.5);
+
+        this.helpText = this.add.text(
+            this.cameras.main.width - 345,
+            120,
+            this.tips[this.currentTip],
+            {
+                fontFamily: 'pixelFont',
+                fontSize: '12px',
+                color: COLOR_BLANCO,
+                align: 'center',
+                wordWrap: { width: 320 }
+            }
+        ).setOrigin(0.5);
+
+        this.closeHelp = this.add.text(
+            this.cameras.main.width - 190,
+            65,
+            'x',
+            {
+                fontFamily: 'pixelFont',
+                fontSize: '14px',
+                color: '#ff0000'
+            }
+        ).setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => {
+                this.hideHelpBox();
+            });
+
+        this.currentTip = (this.currentTip + 1) % this.tips.length;
+
+        if (this.tipTimer) {
+            this.tipTimer.remove();
+        }
+        this.tipTimer = this.time.addEvent({
+            delay: 6000,
+            loop: true,
+            callback: () => {
+                if (this.helpBoxVisible) {
+                    this.helpText.setText(this.tips[this.currentTip]);
+                    this.currentTip = (this.currentTip + 1) % this.tips.length;
+                }
+            }
+        });
+    }
+
+    hideHelpBox() {
+        this.helpBoxVisible = false;
+        if (this.helpGraphics) this.helpGraphics.destroy();
+        if (this.helpTitle) this.helpTitle.destroy();
+        if (this.helpText) this.helpText.destroy();
+        if (this.closeHelp) this.closeHelp.destroy();
+        if (this.tipTimer) {
+            this.tipTimer.remove();
+            this.tipTimer = null;
+        }
     }
 
     createTerminalInterface() {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
-        // Terminal de fondo
         this.terminal = this.add.image(centerX, centerY - 50, 'terminal');
-        this.terminal.setScale(5);
+        this.terminal.setScale(3);
 
-        // Área de texto sobre la terminal
-        const terminalBounds = this.terminal.getBounds();
-        
-        // Fondo oscuro para el área de texto
-
-        // Texto del prompt
-        this.promptText = this.add.text(centerX - 275, centerY - 580, 'SQL> ', {
+        this.promptText = this.add.text(centerX - 165, centerY - 350, 'SQL> ', {
             fontFamily: 'pixelFont',
-            fontSize: '25px',
+            fontSize: '14px',
             color: COLOR_VERDE
         });
 
-        // Texto del comando actual
-        this.commandText = this.add.text(centerX - 200, centerY - 580, '', {
+        this.commandText = this.add.text(centerX - 105, centerY - 352, '', {
             fontFamily: 'pixelFont',
-            fontSize: '28px',
-            color: COLOR_BLANCO,
-            wordWrap: { width: 600 }
+            fontSize: '18px',
+            color: '#000000',
+            wordWrap: { width: 200 }
         });
 
-        // Cursor parpadeante
-        this.cursorText = this.add.text(centerX - 200, centerY - 580, this.cursor, {
+        this.cursorText = this.add.text(centerX - 105, centerY - 352, this.cursor, {
             fontFamily: 'pixelFont',
-            fontSize: '28px',
-            color: COLOR_BLANCO
+            fontSize: '18px',
+            color: '#000000'
         });
 
-        // Historial de comandos (máximo 3 líneas visibles)
-        this.historyText = this.add.text(centerX - 265, centerY - 320, '', {
+        this.historyText = this.add.text(centerX - 160, centerY - 100, '', {
             fontFamily: 'pixelFont',
-            fontSize: '25px',
-            color: COLOR_CELESTE,
-            wordWrap: { width: 650 },
+            fontSize: '10px',
+            color: COLOR_VERDE,
+            wordWrap: { width: 200 },
             lineSpacing: 5
         });
 
-        // Botones
         this.createButtons();
-
-        // Área de instrucciones
         this.createInstructionArea();
 
-        // Animación del cursor
         this.cursorTimer = this.time.addEvent({
             delay: 500,
             loop: true,
@@ -1756,106 +1860,215 @@ class Desafio2Scene extends Phaser.Scene {
     }
 
     createButtons() {
-        const centerX = this.cameras.main.centerX;
-        const centerY = this.cameras.main.centerY;
+    const centerX = this.cameras.main.centerX;
+    const centerY = this.cameras.main.centerY;
 
-        // Botón OK
-        this.okButton = this.add.image(centerX + 200, centerY + 245, 'botonOk');
-        this.okButton.setScale(1);
-        this.okButton.setInteractive({ useHandCursor: true });
-        this.okButton.on('pointerdown', () => {
-            this.executeCommand();
-        });
+    // Botón OK
+    this.okButton = this.add.image(centerX + 120, centerY + 125, 'botonOk');
+    this.okButton.setScale(0.6);
+    this.okButton.setInteractive({ useHandCursor: true });
+    this.okButton.on('pointerdown', () => {
+        this.executeCommand();
+    });
 
-        this.okButton.on('pointerover', () => {
-            this.okButton.setScale(1.1);
-        });
+    this.okButton.on('pointerover', () => {
+        this.okButton.setScale(0.7);
+    });
 
-        this.okButton.on('pointerout', () => {
-            this.okButton.setScale(1);
-        });
+    this.okButton.on('pointerout', () => {
+        this.okButton.setScale(0.6);
+    });
 
-        // Botón DELETE
-        this.deleteButton = this.add.image(centerX - 200, centerY + 245, 'botonDelete');
-        this.deleteButton.setScale(1);
-        this.deleteButton.setInteractive({ useHandCursor: true });
-        this.deleteButton.on('pointerdown', () => {
-            this.clearCommand();
-        });
+    // AGREGAR ETIQUETA OK
+    this.add.text(centerX + 120, centerY + 200, 'EJECUTAR', {
+        fontFamily: 'pixelFont',
+        fontSize: '12px',
+        color: COLOR_VERDE
+    }).setOrigin(0.5);
 
-        this.deleteButton.on('pointerover', () => {
-            this.deleteButton.setScale(1.1);
-        }); 
+    // Botón DELETE
+    this.deleteButton = this.add.image(centerX - 120, centerY + 125, 'botonDelete');
+    this.deleteButton.setScale(0.6);
+    this.deleteButton.setInteractive({ useHandCursor: true });
+    this.deleteButton.on('pointerdown', () => {
+        this.clearCommand();
+    });
 
-        this.deleteButton.on('pointerout', () => {
-            this.deleteButton.setScale(1);
-        });
-    }
+    this.deleteButton.on('pointerover', () => {
+        this.deleteButton.setScale(0.7);
+    }); 
+
+    this.deleteButton.on('pointerout', () => {
+        this.deleteButton.setScale(0.6);
+    });
+
+    // AGREGAR ETIQUETA DELETE
+    this.add.text(centerX - 120, centerY + 170, 'BORRAR', {
+        fontFamily: 'pixelFont',
+        fontSize: '12px',
+        color: '#000000ff'
+    }).setOrigin(0.5);
+}
 
     createInstructionArea() {
         const centerX = this.cameras.main.centerX;
         const topY = 150;
 
-   
-        // Texto de instrucciones
-        this.instructionText = this.add.text(centerX, topY + 500, '', {
-            fontFamily: 'pixelFont',
-            fontSize: '28px',
-            color: COLOR_AMARILLO,
-   
-            wordWrap: { width: 750 },
-            lineSpacing: 8
-        }).setOrigin(0.5);
+        const instructionBg = this.add.graphics();
+        instructionBg.fillStyle(0x000033, 0.7);
+        instructionBg.fillRoundedRect(40, topY - 40, 500, 310, 20);
+        instructionBg.lineStyle(2, 0x00ffff, 0.8);
+        instructionBg.strokeRoundedRect(40, topY - 40, 500, 310, 20);
 
-        // Contador de progreso
-        this.progressCounter = this.add.text(centerX, topY - 80, '', {
+        this.instructionText = this.add.text(80, topY, '', {
             fontFamily: 'pixelFont',
-            fontSize: '14px',
-            color: COLOR_CELESTE
+            fontSize: '22px',
+            color: COLOR_BLANCO,
+            wordWrap: { width: 390 },
+            lineSpacing: 8
+        }).setOrigin(0, 0);
+    }
+
+    createProgressBar() {
+        const barWidth = 320;
+        const barHeight = 28;
+        const margin = 40;
+        const x = this.cameras.main.width - barWidth / 2 - margin;
+        const y = this.cameras.main.height - barHeight / 2 - margin;
+
+        this.progressBar = this.add.graphics();
+        this.progressBar.fillStyle(0x222222, 0.8);
+        this.progressBar.fillRoundedRect(x - barWidth / 2, y - barHeight / 2, barWidth, barHeight, 12);
+        this.progressBar.lineStyle(3, 0x00ffff, 0.9);
+        this.progressBar.strokeRoundedRect(x - barWidth / 2, y - barHeight / 2, barWidth, barHeight, 12);
+
+        this.progressFill = this.add.graphics();
+        this.updateProgressBar();
+
+        this.progressText = this.add.text(x, y, `Progreso: 0/${this.sqlSteps.length}`, {
+            fontFamily: 'pixelFont',
+            fontSize: '16px',
+            color: COLOR_BLANCO
         }).setOrigin(0.5);
     }
 
+    updateProgressBar() {
+        if (!this.progressFill) return;
+        const barWidth = 320;
+        const barHeight = 28;
+        const margin = 40;
+        const x = this.cameras.main.width - barWidth / 2 - margin;
+        const y = this.cameras.main.height - barHeight / 2 - margin;
+
+        this.progressFill.clear();
+
+        const percent = this.currentStep / this.sqlSteps.length;
+        const fillWidth = Math.floor(barWidth * percent);
+
+        const fillColor = percent === 1 ? 0x59ff00 : 0x00eeff;
+
+        this.progressFill.fillStyle(fillColor, 0.85);
+        this.progressFill.fillRoundedRect(x - barWidth / 2, y - barHeight / 2, fillWidth, barHeight, 12);
+
+        if (this.progressText) {
+            this.progressText.setText(`Progreso: ${this.currentStep}/${this.sqlSteps.length}`);
+        }
+    }
+
+    createAttemptBar() {
+        const barWidth = 320;
+        const barHeight = 28;
+        const margin = 40;
+        const x = barWidth / 2 + margin;
+        const y = this.cameras.main.height - barHeight / 2 - margin;
+
+        this.attemptBar = this.add.graphics();
+        this.attemptBar.fillStyle(0x222222, 0.8);
+        this.attemptBar.fillRoundedRect(x - barWidth / 2, y - barHeight / 2, barWidth, barHeight, 12);
+        this.attemptBar.lineStyle(3, 0xff3366, 0.9);
+        this.attemptBar.strokeRoundedRect(x - barWidth / 2, y - barHeight / 2, barWidth, barHeight, 12);
+
+        this.attemptFill = this.add.graphics();
+        this.updateAttemptBar();
+
+        this.attemptText = this.add.text(x, y, `Intentos: ${this.attemptsLeft}/${this.maxAttempts}`, {
+            fontFamily: 'pixelFont',
+            fontSize: '16px',
+            color: COLOR_BLANCO
+        }).setOrigin(0.5);
+    }
+
+    updateAttemptBar() {
+        if (!this.attemptFill) return;
+        const barWidth = 320;
+        const barHeight = 28;
+        const margin = 40;
+        const x = barWidth / 2 + margin;
+        const y = this.cameras.main.height - barHeight / 2 - margin;
+
+        this.attemptFill.clear();
+
+        const percent = this.attemptsLeft / this.maxAttempts;
+        const fillWidth = Math.floor(barWidth * percent);
+
+        const fillColor = percent <= 0.3 ? 0xff0000 : 0xff3366;
+
+        this.attemptFill.fillStyle(fillColor, 0.85);
+        this.attemptFill.fillRoundedRect(x - barWidth / 2, y - barHeight / 2, fillWidth, barHeight, 12);
+
+        if (this.attemptText) {
+            this.attemptText.setText(`Intentos: ${this.attemptsLeft}/${this.maxAttempts}`);
+        }
+    }
+
     setupKeyboardInput() {
-        // Capturar todas las teclas
+        // Solo capturar entrada para escribir, NO para ejecutar
         this.input.keyboard.on('keydown', (event) => {
-            this.handleKeyPress(event);
+            const key = event.key;
+            event.preventDefault();
+
+            if (key === 'Backspace') {
+                if (this.currentInput.length > 0) {
+        // Si el último carácter es un salto de línea, eliminarlo
+        if (this.currentInput[this.currentInput.length - 1] === '\n') {
+            this.currentInput = this.currentInput.slice(0, -1);
+        }
+        this.currentInput = this.currentInput.slice(0, -1);
+        this.updateCommandDisplay();
+    }
+            } else if (key.length === 1) {
+                // Calcular cuántos caracteres hay en la línea actual
+                const lines = this.currentInput.split('\n');
+                const currentLine = lines[lines.length - 1] || '';
+
+                if (currentLine.length >= 14) {
+                    // Si la línea actual tiene 14 caracteres, agregar salto de línea
+                    this.currentInput += '\n' + key;
+                } else {
+                    this.currentInput += key;
+    }
+                this.updateCommandDisplay();
+            }
+            // NO procesar Enter aquí
         });
 
-        // Asegurar que el juego capture el foco
         this.input.keyboard.enabled = true;
         this.game.canvas.focus();
     }
 
-    handleKeyPress(event) {
-        const key = event.key;
-
-        // Prevenir comportamiento por defecto
-        event.preventDefault();
-
-        if (key === 'Backspace') {
-            if (this.currentInput.length > 0) {
-                this.currentInput = this.currentInput.slice(0, -1);
-                this.updateCommandDisplay();
-            }
-        } else if (key === 'Enter') {
-            this.executeCommand();
-        } else if (key.length === 1) {
-            // Solo caracteres imprimibles
-            this.currentInput += key;
-            this.updateCommandDisplay();
-        }
-    }
-
     updateCommandDisplay() {
         this.commandText.setText(this.currentInput);
-        
-        // Posicionar el cursor al final del texto
-        const textWidth = this.commandText.width;
-        this.cursorText.setPosition(
-            this.commandText.x + textWidth,
-            this.commandText.y
-        );
-    }
+
+    // Calcular posición del cursor
+    const lines = this.currentInput.split('\n');
+    const lastLine = lines[lines.length - 1] || '';
+    const lineHeight = 22; // Ajusta según tu fuente
+
+    this.cursorText.setPosition(
+        this.commandText.x + (lastLine.length * 12), // 12 píxeles por carácter aprox
+        this.commandText.y + ((lines.length - 1) * lineHeight)
+    );
+}
 
     executeCommand() {
         if (this.currentInput.trim() === '') return;
@@ -1865,23 +2078,15 @@ class Desafio2Scene extends Phaser.Scene {
         const command = this.currentInput.trim();
         const currentStep = this.sqlSteps[this.currentStep];
         
-        // Agregar comando al historial
-        this.commandHistory.push(`SQL> ${command}`);
-        
-        // Mantener solo las últimas 3 líneas en el historial
-        if (this.commandHistory.length > 3) {
-            this.commandHistory.shift();
-        }
-        
-        // Actualizar display del historial
-        this.historyText.setText(this.commandHistory.join('\n'));
+        // Limpiar historial cada vez
+        this.historyText.setText('');
 
-        // Verificar si el comando es correcto
         if (this.isCommandCorrect(command, currentStep.expectedCommand)) {
             this.sound.play('acierto', { volume: 0.2 });
-            this.commandHistory.push(`> ${currentStep.successMessage}`);
+            this.historyText.setText(`> ${currentStep.successMessage}`);
             
             this.currentStep++;
+            this.updateProgressBar();
             
             if (this.currentStep >= this.sqlSteps.length) {
                 this.showCompletionMessage();
@@ -1890,31 +2095,72 @@ class Desafio2Scene extends Phaser.Scene {
             }
         } else {
             this.sound.play('error', { volume: 0.2 });
-            this.commandHistory.push(`> Error: Comando incorrecto`);
+            this.historyText.setText(`> Error: Comando incorrecto`);
+
+            this.attemptsLeft--;
+            this.updateAttemptBar();
+
+            if (this.attemptsLeft <= 0) {
+                this.showLoseMessage();
+            }
+
+            // Mostrar hint si quedan 5 intentos
+            if (this.attemptsLeft === 5) {
+                this.showFlooHint();
+            }
         }
 
-        // Limpiar input actual
         this.currentInput = '';
         this.updateCommandDisplay();
-        
-        // Actualizar historial
-        if (this.commandHistory.length > 3) {
-            this.commandHistory.shift();
+    }
+
+    showFlooHint() {
+        if (!this.flooHelpHint) {
+            const boxWidth = 500;
+            const boxHeight = 80;
+            const centerX = this.cameras.main.centerX;
+            const centerY = this.cameras.main.centerY;
+
+            this.flooHelpHintBg = this.add.graphics();
+            this.flooHelpHintBg.fillStyle(0x000033, 0.85);
+            this.flooHelpHintBg.fillRoundedRect(centerX - boxWidth / 2, centerY - boxHeight / 2, boxWidth, boxHeight, 16);
+            this.flooHelpHintBg.lineStyle(2, 0x00ffff, 1);
+            this.flooHelpHintBg.strokeRoundedRect(centerX - boxWidth / 2, centerY - boxHeight / 2, boxWidth, boxHeight, 16);
+
+            this.flooHelpHint = this.add.text(
+                centerX, centerY,
+                "Siempre puedes pedir la ayuda de Floo",
+                {
+                    fontFamily: 'pixelFont',
+                    fontSize: '18px',
+                    color: COLOR_BLANCO,
+                    align: 'center',
+                    wordWrap: { width: boxWidth - 40 }
+                }
+            ).setOrigin(0.5).setDepth(1000);
+
+            this.time.delayedCall(4000, () => {
+                if (this.flooHelpHint) {
+                    this.flooHelpHint.destroy();
+                    this.flooHelpHint = null;
+                }
+                if (this.flooHelpHintBg) {
+                    this.flooHelpHintBg.destroy();
+                    this.flooHelpHintBg = null;
+                }
+            });
         }
-        this.historyText.setText(this.commandHistory.join('\n'));
     }
-
-    isCommandCorrect(input, expected) {
-        // Normalizar ambos comandos (eliminar espacios extra, convertir a mayúsculas)
-        const normalizeCommand = (cmd) => {
-            return cmd.toUpperCase()
-                     .replace(/\s+/g, ' ')
-                     .trim();
-        };
-
-        return normalizeCommand(input) === normalizeCommand(expected);
-    }
-
+isCommandCorrect(input, expected) {
+    // Eliminar todos los espacios y comparar solo la estructura
+    const normalize = (cmd) => {
+        return cmd.toUpperCase()
+                 .replace(/\s+/g, '')  // Eliminar TODOS los espacios
+                 .trim();
+    };
+    
+    return normalize(input) === normalize(expected);
+}
     clearCommand() {
         this.sound.play('clickSound', { volume: 0.1 });
         this.currentInput = '';
@@ -1924,44 +2170,13 @@ class Desafio2Scene extends Phaser.Scene {
     showCurrentInstruction() {
         const currentStep = this.sqlSteps[this.currentStep];
         this.instructionText.setText(currentStep.instruction);
-        this.progressCounter.setText(`Paso ${this.currentStep + 1} de ${this.sqlSteps.length}`);
-    }
-
-    showHint() {
-        const currentStep = this.sqlSteps[this.currentStep];
-        if (currentStep && currentStep.hint) {
-            this.sound.play('quackFloo', { volume: 0.1 });
-            
-            // Mostrar hint temporal
-            const hintText = this.add.text(
-                this.cameras.main.centerX,
-                this.cameras.main.height - 100,
-                currentStep.hint,
-                {
-                    fontFamily: 'pixelFont',
-                    fontSize: '14px',
-                    color: COLOR_BLANCO,
-                    align: 'center',
-                    backgroundColor: '#000033',
-                    padding: { left: 20, right: 20, top: 10, bottom: 10 }
-                }
-            ).setOrigin(0.5).setAlpha(0);
-
-            // Animar aparición y desaparición
-            this.tweens.add({
-                targets: hintText,
-                alpha: 1,
-                duration: 300,
-                yoyo: true,
-                hold: 3000,
-                onComplete: () => {
-                    hintText.destroy();
-                }
-            });
-        }
     }
 
     showCompletionMessage() {
+        if (this.helpBoxVisible) {
+            this.hideHelpBox();
+        }
+
         this.sound.play('w', { volume: 0.3 });
         
         let overlay = this.add.rectangle(
@@ -2009,26 +2224,85 @@ class Desafio2Scene extends Phaser.Scene {
             ease: 'Power2',
             onComplete: () => {
                 this.time.delayedCall(3000, () => {
-                    this.scene.start('MenuScene'); // Cambiar por el siguiente nivel cuando esté listo
+                    this.scene.start('MenuScene');
                 });
             }
         });
     }
 
+    showLoseMessage() {
+        if (this.helpBoxVisible) {
+            this.hideHelpBox();
+        }
+
+        this.sound.play('error', { volume: 0.4 });
+
+        let overlay = this.add.rectangle(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0x000000,
+            0.5
+        );
+
+        let messageBox = this.add.rectangle(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            950,
+            320,
+            0x330000,
+            0.95
+        ).setStrokeStyle(2, 0xff3366);
+
+        let loseText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY - 30,
+            "¡MISIÓN FALLIDA!\nSe han agotado los intentos", {
+            fontFamily: 'pixelFont',
+            fontSize: '24px',
+            color: '#ff3366',
+            align: 'center'
+        }).setOrigin(0.5);
+
+        let retryText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY + 50,
+            "[Reintentar desafío]", {
+            fontFamily: 'pixelFont',
+            fontSize: '16px',
+            color: COLOR_BLANCO,
+            align: 'center'
+        }).setOrigin(0.5);
+
+        [overlay, messageBox, loseText, retryText].forEach(element => {
+            element.setAlpha(0);
+        });
+
+        this.tweens.add({
+            targets: [overlay, messageBox, loseText, retryText],
+            alpha: 1,
+            duration: 400,
+            ease: 'Power2',
+            onComplete: () => {
+                retryText.setInteractive({ useHandCursor: true })
+                    .on('pointerdown', () => {
+                        this.scene.restart();
+                    });
+            }
+        });
+    }
+
     shutdown() {
-        // Limpiar timers
         if (this.typewriterTimer) {
             this.typewriterTimer.destroy();
         }
         if (this.cursorTimer) {
             this.cursorTimer.destroy();
         }
-        
-        // Limpiar eventos de teclado
+        if (this.tipTimer) {
+            this.tipTimer.remove();
+        }
+
         this.input.keyboard.removeAllListeners();
     }
 }
-
 // Configuración del juego
 
 const config = {
@@ -2039,7 +2313,7 @@ const config = {
     parent: "game",
     scene: [
         BootScene, 
-        MenuScene, 
+        MenuScene,
         IntroductionScene, 
         AboutScene, 
         Level1Scene, 
